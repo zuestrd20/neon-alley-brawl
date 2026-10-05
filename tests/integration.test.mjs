@@ -17,7 +17,7 @@ const appSource = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
 
-function makeApp({ storage = {}, storageThrows = false } = {}) {
+function makeApp({ storage = {}, storageThrows = false, afterUpdate = null } = {}) {
   const nodes = new Map(), games = [], updates = [], audioInstances = [], renders = [];
   let now = 1000, raf = null;
   class Element {
@@ -75,7 +75,7 @@ function makeApp({ storage = {}, storageThrows = false } = {}) {
     },
     AudioSystem: AppAudio,
     createGame(options) { const g = engineCreate(options); games.push(g); return g; },
-    update(game, dt, input) { updates.push({ dt, input: { ...input } }); engineUpdate(game, dt, input); },
+    update(game, dt, input) { updates.push({ dt, input: { ...input } }); engineUpdate(game, dt, input); afterUpdate?.(game); },
     render(ctx, game, options) { renders.push({ game, options }); },
   };
   // Only imports are replaced; the application body and handlers run unchanged.
@@ -219,6 +219,36 @@ test('win and loss terminal states show correct UI, stop music, save best and al
     assert.match(app.nodes.get('status').textContent, outcome === 'won' ? /RESTORED/ : /LOST/);
     app.click('replay'); assert.equal(app.nodes.get('game').dataset.state, 'playing'); assertNoHeldControls(app);
   }
+});
+
+test('app forwards only explicit sound events to audio, without duplicate gameplay-event cues', () => {
+  const app = makeApp({ afterUpdate(game) {
+    game.events = [{ type: 'sound', kind: 'punch' }, { type: 'hit', kind: 'punch' }, { type: 'sound', kind: 'hit' }, { type: 'hit', kind: 'hit' }];
+  } });
+  app.click('start'); app.frame();
+  assert.deepEqual(app.audio.effects, ['punch', 'hit']);
+});
+
+test('keyboard and touch can share one action without a released source canceling the other', () => {
+  const app = makeApp(); app.click('start');
+  app.key('keydown', 'KeyJ'); app.pointer('punch', 'pointerdown', 51);
+  app.key('keyup', 'KeyJ'); app.frame(); assert.equal(app.lastInput.punch, true);
+  app.key('keydown', 'KeyJ'); app.pointer('punch', 'pointerup', 51); app.frame(); assert.equal(app.lastInput.punch, true);
+  app.key('keyup', 'KeyJ'); app.frame(); assert.equal(app.lastInput.punch, undefined);
+});
+
+test('long animation gaps are clamped and simulation advances only in fixed steps', () => {
+  const app = makeApp(); app.click('start'); app.frame(10000);
+  assert.ok(app.updates.length >= 1 && app.updates.length <= 6);
+  assert.ok(app.updates.every(({ dt }) => dt === 1 / 60));
+  assert.equal(app.renders.length, 1);
+});
+
+test('an existing higher best score survives a lower-scoring loss', () => {
+  const app = makeApp({ storage: { 'neon-alley-best': '9000' } }); app.click('start');
+  app.game.score = 300; app.game.status = 'lost'; app.frame();
+  assert.equal(app.store.get('neon-alley-best'), '9000');
+  assert.equal(app.nodes.get('best').textContent, 'BEST 009000');
 });
 
 test('help pauses an active run and sound toggle persists accessible state', () => {
