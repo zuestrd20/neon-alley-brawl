@@ -43,7 +43,7 @@ function shop(c,x,index,t,reduced){
 function container(c,x,y,w,h,col,label){box(c,x-3,y-3,w+6,h+6,P.ink);box(c,x,y,w,h,col);box(c,x+3,y+3,w-6,4,'#637074');for(let j=12;j<w-8;j+=17){box(c,x+j,y+10,4,h-17,'#172c3a');box(c,x+j+4,y+10,2,h-17,'#586569')}box(c,x+4,y+h-7,w-8,4,P.ink);box(c,x+w-34,y+7,3,h-16,P.ink);pixels(c,label,x+17,y+21,2,'#b3b9a0');pixels(c,'MN / 06',x+18,y+h-20,1,'#899d94')}
 function streetBack(c,g,stage,t,reduced){const cam=Number(g.camera)||0;
  if(stage===0){let offset=cam*.65;let first=Math.floor(offset/320)-1;for(let i=first;i<first+5;i++)shop(c,i*320-offset,i,t,reduced);for(let i=0;i<3;i++){let x=i*640-mod(cam*.67,640)-210;wire(c,x,75,x+625,118,34);for(let k=1;k<8;k++){let u=k/8,xx=x+625*u,yy=75+43*u+Math.sin(u*Math.PI)*34;box(c,xx,yy,2,9,P.ink);box(c,xx-4,yy+9,10,11,k%2?'#b76b62':'#568b80');box(c,xx-2,yy+10,6,8,k%2?P.amber:P.mint)}}}
- if(stage===1){box(c,0,221,960,97,'#253348');for(let i=-1;i<6;i++){let x=i*280-mod(cam*.67,280);container(c,x+5,191,258,111,i%2?'#3c565c':'#71554c',i%2?'NORTH / 03':'FRAGILE');if(mod(i,3)===0)container(c,x+39,90,206,92,'#49515e','NX FREIGHT')};for(let i=0;i<4;i++){let x=i*360-mod(cam*.8,360);box(c,x,214,4,100,P.edge);for(let y=222;y<309;y+=15){stroke(c,x,y,x+360,y,'#3b4755',1);for(let k=0;k<24;k++)stroke(c,x+k*15,y,x+k*15+15,y+15,'#3b4755',1)}}sign(c,'FREIGHT MILE',48-mod(cam*.1,550),74,2,P.amber)}
+ if(stage===1){box(c,0,221,960,97,'#253348');for(let i=-1;i<6;i++){let x=i*280-mod(cam*.67,280);container(c,x+5,191,258,111,i%2?'#3c565c':'#71554c',i%2?'NORTH / 03':'FRAGILE');if(mod(i,3)===0)container(c,x+39,90,206,92,'#49515e','NX FREIGHT')};for(let i=0;i<4;i++){let x=i*360-mod(cam*.8,360);box(c,x,214,4,100,P.edge);for(let y=222;y<309;y+=15){stroke(c,x,y,x+360,y,'#3b4755',1);for(let k=0;k<24;k++)stroke(c,x+k*15,y,x+k*15+15,y+15,'#3b4755',1)}}sign(c,'SWITCHYARD NINE',48-mod(cam*.1,550),74,2,P.amber)}
  if(stage===2){box(c,0,266,960,51,'#34364b');box(c,0,263,960,7,'#656277');box(c,0,271,960,2,P.ink);for(let i=-1;i<5;i++){let x=i*340-mod(cam*.5,340);box(c,x+14,172,132,91,'#262c41');box(c,x+8,170,146,8,P.slate);for(let j=0;j<7;j++)box(c,x+26,186+j*9,105,3,'#182336');box(c,x+165,85,8,180,P.slate);box(c,x+150,261,37,7,P.edge);stroke(c,x+170,97,x+136,236,P.edge,4);stroke(c,x+170,97,x+204,236,P.edge,4);for(let j=0;j<5;j++)stroke(c,x+147+j*3,222-j*22,x+193-j*3,222-j*22,P.edge,3);box(c,x+160,66,28,7,P.ink);box(c,x+158,64,27,3,P.coral);box(c,x+168,52,4,17,P.edge);box(c,x+245,246,78,17,P.slate);box(c,x+255,239,55,7,P.edge)}sign(c,'SIGNAL / 99.4',143-mod(cam*.16,620),127,2,P.coral);wire(c,-20,205,980,209,29)}
  box(c,0,312,960,5,P.ink);box(c,0,317,960,5,'#4a5d6c');box(c,0,322,960,9,P.navy);for(let x=-mod(cam,96);x<960;x+=96){box(c,x,324,2,5,P.ink);box(c,x+5,319,73,1,'#6b7479')}
 }
@@ -73,7 +73,7 @@ function person(c,e,g,t,reduced){
  const cam=Number(g.camera)||0;const px=Math.round((Number(e.x)||0)-cam),baseY=Number(e.y)||410,z=Number(e.z)||0; if(px<-95||px>1055)return;
  const player=e.type==='player'||e===g.player,brute=e.type==='brute',boss=e.type==='boss',runner=e.type==='runner';const big=brute||boss,scale=big?2.45:2;
  const dead=e.dead||e.state==='dead'||e.state==='down';const hurt=e.state==='hurt'||e.stun>0;let face=Number(e.face)||1;
- const walk=e.state==='walk'||e.state==='run';const phase=walk?Math.sin(t*(runner?17:11)+(e.id||0)*1.2):Math.sin(t*3)*.12;
+ const walk=e.state==='walk'||e.state==='run';const phase=walk?Math.sin(t*(runner?17:11)+(Number(String(e.id||'').replace(/[^0-9]/g,''))||0)*1.2):Math.sin(t*3)*.12;
  const atk=e.attack;const attacking=e.state==='attack'||!!atk;const windup=e.state==='windup'||(atk&&Number(atk.time)<Number(atk.windup));
  const kick=attacking&&atk&&/kick|heavy|special|spin/.test(atk.kind||'');const air=z>4||e.state==='jump';const active=attacking&&!windup;
  shadow(c,px,baseY,Math.max(19,(big?58:41)-z*.15),dead?.25:.46);
@@ -122,7 +122,8 @@ function atmosphere(c,g,stage,t,reduced){
  const cam=g.camera||0,arena=g.arena;if(arena&&Number(arena.right)-cam<940&&Number(arena.right)-cam>650){const xx=Number(arena.right)-cam;pixels(c,'EXIT',xx-22,340,1,P.mint);poly(c,[[xx+9,343],[xx+17,343],[xx+17,339],[xx+23,346],[xx+17,352],[xx+17,349],[xx+9,349]],P.mint)}
 }
 export function render(ctx,g,{reducedMotion=false}={}){
- const c=ctx,stage=Math.max(0,Math.min(2,Number(g.stage)||0)),t=Number(g.time)||0;c.save();c.imageSmoothingEnabled=false;c.clearRect(0,0,960,540);
+ const c=ctx,stage=Math.max(0,Math.min(2,Number(g.stage)||0)),t=Number(g.time)||0;c.save();c.imageSmoothingEnabled=false;c.clearRect(0,0,960,540);box(c,0,0,960,540,P.ink);
+ if(!reducedMotion&&g.shake>0){const amount=Math.min(6,g.shake);c.translate(Math.round(Math.sin(t*93)*amount),Math.round(Math.cos(t*79)*amount*.55))}
  sky(c,g,stage,t);streetBack(c,g,stage,t,reducedMotion);floor(c,g,stage,t,reducedMotion);props(c,g,stage,t);
  for(const p of g.pickups||[])pickup(c,p,g,reducedMotion?0:t);
  const entities=[...(g.enemies||[])];if(g.player)entities.push(g.player);entities.sort((a,b)=>(a.y||0)-(b.y||0));for(const e of entities)person(c,e,g,t,reducedMotion);
