@@ -49,7 +49,7 @@ export function createGame({ difficulty = 'normal', seed = 1 } = {}) {
   const tuning = DIFFICULTIES[difficulty];
   const player = { ...entity('player', 'player', 230, 407, tuning.health), name: 'RIN',
     speed: 224, chain: 0, chainTimer: 0, grabCooldown: 0, jumpCooldown: 0 };
-  const g = { difficulty, seed, rng: seedNumber(seed), nextId: 1, tuning, world: { ...WORLD },
+  const g = { difficulty, seed, rng: seedNumber(seed), nextId: 1, tuning: { ...tuning }, world: { ...WORLD },
     player, enemies: [], pickups: [], effects: [], events: [], stage: 0, wave: 0,
     stageName: STAGES[0], waveTitle: 'Block 1 / 3', camera: 0,
     arena: { left: 0, right: 880 }, status: 'playing', score: 0, combo: 0,
@@ -133,13 +133,14 @@ function hitEnemy(g, e, damage, knockback, stun, face, source = 'hit') {
   if (e.dead) return;
   e.hp = Math.max(0, e.hp - damage);
   e.flash = 0.13;
-  e.stun = stun * (e.type === 'boss' ? 0.65 : 1);
-  e.vx = face * knockback;
+  // Heavy boss windups resist light strikes; a finisher, air kick or throw interrupts.
+  const armored = e.type === 'boss' && e.attack && e.attack.time > 0.12 &&
+    !['finisher', 'jumpkick', 'throw'].includes(source);
+  e.stun = armored ? 0 : stun * (e.type === 'boss' ? 0.65 : 1);
+  e.vx = face * knockback * (armored ? 0.1 : 1);
   e.grabbedBy = null;
-  e.attack = null;
+  if (!armored) { e.attack = null; e.state = 'hurt'; e.timer = e.stun; }
   e.cooldown = Math.max(e.cooldown, e.stun + 0.25);
-  e.state = 'hurt';
-  e.timer = e.stun;
   addCombo(g);
   g.score += Math.round(damage * (1 + Math.min(g.combo, 20) * 0.025));
   g.shake = Math.max(g.shake, knockback > 140 ? 6 : 3);
@@ -149,6 +150,7 @@ function hitEnemy(g, e, damage, knockback, stun, face, source = 'hit') {
   sound(g, 'hit');
   if (e.hp === 0) {
     e.dead = true;
+    e.attack = null;
     e.state = 'down';
     e.deathTime = 1.1;
     e.stun = 0;
@@ -302,7 +304,9 @@ function beginEnemyAttack(g, e) {
   e.attacksMade += 1;
   const charge = e.type === 'runner' || e.type === 'boss' && e.attacksMade % 3 === 0;
   const slam = e.type === 'brute' || e.type === 'boss' && !charge;
-  const windup = charge && e.type === 'boss' ? 0.9 : spec.windup;
+  const enraged = e.type === 'boss' && e.hp < e.maxHp * 0.5;
+  e.enraged = enraged;
+  const windup = (charge && e.type === 'boss' ? 0.9 : spec.windup) * (enraged ? 0.83 : 1);
   e.attack = { kind: charge ? 'charge' : slam ? 'slam' : 'punch', time: 0, windup,
     active: windup, end: windup + (charge ? 0.25 : 0.13), duration: windup + (charge ? 0.58 : 0.42),
     range: spec.range, lane: slam ? 48 : 34, damage: spec.damage, face: e.face, hitIds: [],
@@ -471,6 +475,7 @@ export function update(g, dt, input = {}) {
   g.events = [];
   if (g.status !== 'playing' || !Number.isFinite(dt) || dt <= 0) return g;
   const elapsed = Math.min(dt, 1 / 15);
+  input = input && typeof input === 'object' ? input : {};
   g.input = Object.fromEntries(buttons.map(b => [b, Boolean(input[b])]));
   const pressed = Object.fromEntries(buttons.map(b => [b, g.input[b] && !g.lastInput[b]]));
   // Substeps avoid tunnelling and make capped browser-frame updates safe.
