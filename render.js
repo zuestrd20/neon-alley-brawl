@@ -1,3 +1,4 @@
+import { drawSprite, frameFor } from './sprites.js';
 /* Original canvas artwork for NEON ALLEY: Midnight Signal. */
 const P={ink:'#0b1022',deep:'#10172c',navy:'#18233b',slate:'#293955',edge:'#3c536b',muted:'#687992',paper:'#e2f3dd',mint:'#83f7ce',mintDark:'#388f87',coral:'#ff657e',coralDark:'#a83760',amber:'#ffc16e',purple:'#a294ed',blue:'#6085c9',skin:'#edb690',skinShade:'#b87568'};
 const GLYPHS={A:['01110','11011','11011','11111','11011','11011','11011'],B:['11110','11011','11011','11110','11011','11011','11110'],C:['01111','11000','11000','11000','11000','11000','01111'],D:['11110','11011','11011','11011','11011','11011','11110'],E:['11111','11000','11000','11110','11000','11000','11111'],F:['11111','11000','11000','11110','11000','11000','11000'],G:['01111','11000','11000','11011','11011','11011','01111'],H:['11011','11011','11011','11111','11011','11011','11011'],I:['11111','00100','00100','00100','00100','00100','11111'],J:['00111','00011','00011','00011','11011','11011','01110'],K:['11011','11011','11110','11100','11110','11011','11011'],L:['11000','11000','11000','11000','11000','11000','11111'],M:['11011','11111','11111','10101','10001','10001','10001'],N:['11001','11101','11101','11011','11011','11001','11001'],O:['01110','11011','11011','11011','11011','11011','01110'],P:['11110','11011','11011','11110','11000','11000','11000'],Q:['01110','11011','11011','11011','11011','11110','00111'],R:['11110','11011','11011','11110','11100','11010','11011'],S:['01111','11000','11000','01110','00011','00011','11110'],T:['11111','00100','00100','00100','00100','00100','00100'],U:['11011','11011','11011','11011','11011','11011','01110'],V:['11011','11011','11011','11011','11011','01010','00100'],W:['10001','10001','10001','10101','11111','11111','11011'],X:['11011','11011','01010','00100','01010','11011','11011'],Y:['11011','11011','01010','00100','00100','00100','00100'],Z:['11111','00011','00110','00100','01100','11000','11111'],'0':['01110','11011','11011','11111','11011','11011','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],'2':['01110','11011','00011','00110','01100','11000','11111'],'3':['11110','00011','00011','01110','00011','00011','11110'],'4':['11011','11011','11011','11111','00011','00011','00011'],'5':['11111','11000','11000','11110','00011','00011','11110'],'6':['01110','11000','11000','11110','11011','11011','01110'],'7':['11111','00011','00110','00100','01100','01100','01100'],'8':['01110','11011','11011','01110','11011','11011','01110'],'9':['01110','11011','11011','01111','00011','00011','01110'],'-':['00000','00000','00000','11111','00000','00000','00000'],'.':['00000','00000','00000','00000','00000','00110','00110'],':':['00000','00100','00100','00000','00100','00100','00000'],'/':['00001','00011','00110','00100','01100','11000','10000'],'+':['00000','00100','00100','11111','00100','00100','00000']};
@@ -71,42 +72,16 @@ function shadow(c,x,y,w,alpha=.45){c.save();c.globalAlpha=alpha;poly(c,[[x-w*.5,
 function health(c,e,x,y,wide){if(e.type==='player'||e.hp<=0)return;const w=wide?60:38;box(c,x-w/2-1,y-1,w+2,5,P.ink);box(c,x-w/2,y,w,3,'#3c3047');box(c,x-w/2,y,Math.max(0,w*e.hp/(e.maxHp||e.hp)),3,e.type==='boss'?P.coral:P.amber)}
 function person(c,e,g,t,reduced){
  const cam=Number(g.camera)||0;const px=Math.round((Number(e.x)||0)-cam),baseY=Number(e.y)||410,z=Number(e.z)||0; if(px<-95||px>1055)return;
- const player=e.type==='player'||e===g.player,brute=e.type==='brute',boss=e.type==='boss',runner=e.type==='runner';const big=brute||boss,scale=big?2.45:2;
+ const player=e.type==='player'||e===g.player,brute=e.type==='brute',boss=e.type==='boss',runner=e.type==='runner';const big=brute||boss;
  const dead=e.dead||e.state==='dead'||e.state==='down';const hurt=e.state==='hurt'||e.stun>0;let face=Number(e.face)||1;
- const walk=e.state==='walk'||e.state==='run';const phase=walk?Math.sin(t*(runner?17:11)+(Number(String(e.id||'').replace(/[^0-9]/g,''))||0)*1.2):Math.sin(t*3)*.12;
  const atk=e.attack;const attacking=e.state==='attack'||!!atk;const windup=e.state==='windup'||(atk&&Number(atk.time)<Number(atk.windup));
  const kick=attacking&&atk&&/kick|heavy|special|spin/.test(atk.kind||'');const air=z>4||e.state==='jump';const active=attacking&&!windup;
  shadow(c,px,baseY,Math.max(19,(big?58:41)-z*.15),dead?.25:.46);
  if(windup&&!dead){c.save();c.globalAlpha=.35;poly(c,[[px+face*15,baseY-13],[px+face*(big?110:83),baseY-26],[px+face*(big?110:83),baseY+16],[px+face*15,baseY+7]],P.coral);c.globalAlpha=.7;box(c,px+face*30-3,baseY-10,6,3,P.amber);c.restore()}
- if(dead){c.save();c.translate(px,baseY-5);c.rotate(-face*Math.PI/2);c.scale(scale*.86,scale*.86);box(c,-8,-24,15,25,P.ink);box(c,-7,-23,12,16,player?P.mintDark:big?'#753b5b':'#534971');box(c,-6,-33,12,10,P.skinShade);box(c,-7,-35,13,5,P.ink);box(c,-7,1,15,5,P.ink);c.restore();return}
- const lift=walk?Math.abs(phase)*2:0;const sy=baseY-z-lift;
- c.save();c.translate(px,Math.round(sy));c.scale(scale*face,scale);
- // Silhouette outline, offset limbs and sneaker soles keep sprites crisp at any depth.
- let legA=air?-5:Math.round(phase*4),legB=air?5:-legA;
- if(kick&&active){poly(c,[[-5,-15],[4,-16],[14,-16],[22,-23],[26,-21],[19,-11],[4,-9],[-4,-7]],P.ink);poly(c,[[-3,-14],[4,-14],[14,-14],[23,-21],[24,-20],[18,-12],[3,-11],[-2,-8]],player?'#243d50':P.slate);box(c,22,-24,6,5,P.ink);box(c,24,-22,6,3,player?P.mint:P.paper);legA=-1;legB=0}
- else{poly(c,[[-7,-16],[0,-16],[1+legA,-4],[-1+legA,0],[-7+legA,-1],[-8,-8]],P.ink);poly(c,[[0,-16],[7,-16],[8,-8],[5+legB,0],[-1+legB,0],[-1,-7]],P.ink);box(c,-6,-15,5,7,player?'#253c53':'#303045');box(c,-6+legA,-8,5,7,player?'#2c4b61':'#3e4056');box(c,1,-15,5,7,player?'#33516a':'#44445b');box(c,legB,-8,5,7,player?'#3d5b70':'#53516b');box(c,-8+legA,-3,8,4,P.ink);box(c,-6+legA,-1,7,2,player?P.mint:'#8d8c9d');box(c,-1+legB,-3,9,4,P.ink);box(c,legB,-1,8,2,player?P.paper:'#bdb0ac')}
- if(kick&&active){box(c,-5,-14,6,14,P.ink);box(c,-4,-12,4,11,P.slate);box(c,-5,-2,9,3,P.ink);box(c,-4,0,8,2,P.paper)}
- const body=player?P.mint:boss?'#946ca5':brute?'#b87461':runner?'#ad7b5d':'#72719f';const shade=player?'#367e7b':boss?'#51375f':brute?'#704551':runner?'#6f514c':'#42465f';const bodyWidth=big?11:8;
- // Back arm.
- poly(c,[[-bodyWidth,-30],[-bodyWidth-5,-27],[-bodyWidth-6,-16],[-bodyWidth-3,-13],[-bodyWidth+1,-18],[-bodyWidth+3,-25]],P.ink);box(c,-bodyWidth-3,-27,5,10,shade);box(c,-bodyWidth-4,-18,5,5,P.skinShade);box(c,-bodyWidth-4,-14,5,3,P.ink);
- poly(c,[[-bodyWidth,-32],[bodyWidth-1,-32],[bodyWidth+3,-25],[bodyWidth,-14],[-bodyWidth,-14],[-bodyWidth-2,-24]],P.ink);
- box(c,-bodyWidth+1,-30,bodyWidth*2-1,14,shade);box(c,-bodyWidth+2,-30,bodyWidth-2,13,body);box(c,1,-29,bodyWidth-2,12,body);box(c,-1,-30,2,14,P.ink);box(c,-bodyWidth+1,-17,bodyWidth*2-1,3,P.ink);box(c,-bodyWidth+3,-24,4,2,player?'#d1ffe4':P.paper);box(c,3,-23,4,1,shade);
- if(player){box(c,-7,-29,4,3,'#c0ffe3');box(c,3,-28,4,2,'#c0ffe3');box(c,-1,-20,1,3,P.amber)}
- if(brute){box(c,-7,-29,14,9,P.skinShade);box(c,-7,-29,14,3,P.skin);box(c,-1,-24,2,4,'#855250');box(c,-11,-28,4,11,'#784051');box(c,7,-28,4,11,'#784051')}
- if(boss){box(c,-bodyWidth+1,-15,8,10,shade);box(c,3,-15,7,10,shade);box(c,-8,-29,3,12,P.coral);box(c,5,-29,3,12,P.coral);box(c,-3,-28,6,7,P.ink);box(c,-1,-26,2,4,P.amber)}
- // Neck and head.
- box(c,-4,-36,8,6,P.ink);box(c,-3,-36,6,7,P.skinShade);box(c,-7,-45,14,13,P.ink);box(c,-6,-43,12,10,P.skin);box(c,4,-40,4,6,P.skin);box(c,-6,-35,12,3,P.skinShade);box(c,4,-39,2,2,P.ink);box(c,7,-36,2,2,P.skinShade);
- if(player){box(c,-7,-46,14,5,P.ink);box(c,-8,-42,5,6,P.ink);box(c,-5,-45,11,2,'#344250');box(c,1,-46,7,4,'#344250');box(c,-8,-39,4,6,P.coral);box(c,-7,-38,2,3,P.amber);box(c,-5,-33,13,4,P.coral);box(c,-5,-29,5,3,P.coralDark);poly(c,[[-4,-31],[-11,-33],[-17-(walk?Math.round(phase*2):0),-30],[-13,-27],[-7,-29]],P.coral);box(c,5,-41,2,1,P.paper)}
- else if(runner){box(c,-7,-46,14,7,'#ad6979');box(c,-8,-42,4,7,'#71475f');box(c,-3,-39,11,3,P.ink);box(c,3,-39,5,1,P.amber);box(c,-3,-33,9,3,'#593750')}
- else if(brute){box(c,-7,-46,14,5,P.ink);box(c,-6,-46,12,2,'#4b3b43');box(c,-6,-33,12,3,'#55444b');box(c,5,-35,2,2,P.paper);box(c,-7,-38,2,3,P.amber)}
- else if(boss){box(c,-8,-48,15,7,'#d4c5cd');box(c,-9,-45,5,10,'#8b7f9c');box(c,-4,-40,13,3,P.ink);box(c,-2,-39,11,1,P.coral);box(c,-6,-34,10,2,'#806477')}
- else{box(c,-8,-45,15,5,'#54475f');box(c,-8,-41,4,6,'#54475f');box(c,-7,-46,12,2,P.purple);box(c,4,-42,7,2,'#54475f');box(c,-3,-35,10,3,'#76637d')}
- // Front arm changes silhouette for every action.
- if(active&&!kick){let reach=atk&&/heavy|upper/.test(atk.kind||'')?24:22;poly(c,[[5,-29],[11,-30],[17,-29],[reach,-31],[reach+4,-26],[reach,-23],[14,-23],[7,-22]],P.ink);box(c,7,-28,10,5,body);box(c,15,-28,reach-12,4,shade);box(c,reach-1,-31,7,7,P.skin);box(c,reach+3,-29,4,5,player?P.paper:P.skinShade);box(c,reach-2,-28,3,5,P.ink);if(player)box(c,14,-28,3,5,'#d2fff0')}
- else if(windup){poly(c,[[5,-30],[11,-28],[14,-19],[10,-16],[4,-21]],P.ink);box(c,7,-28,4,9,body);box(c,7,-21,6,5,P.skin);box(c,6,-22,3,5,P.ink)}
- else{let arm=walk?Math.round(phase*2):0;poly(c,[[5,-30],[11,-28],[12+arm,-19],[9+arm,-13],[5+arm,-15],[6,-22]],P.ink);box(c,7,-28,3,9,body);box(c,8+arm,-20,4,5,shade);box(c,7+arm,-16,5,4,P.skin);box(c,7+arm,-17,5,2,player?P.paper:P.ink)}
- if(hurt&&!reduced){c.globalAlpha=.38;box(c,-8,-43,15,29,P.paper);c.globalAlpha=1}
- c.restore();
+ const sy=Math.round(baseY-z);
+ const frame=frameFor(e,t);
+ drawSprite(c,e.type,frame,px,sy,face,hurt&&!reduced&&Math.floor(t*14)%2===0);
+ if(dead)return;
  if(player){pixels(c,'RIN',px-9,sy-106,1,P.mint);poly(c,[[px-3,sy-97],[px+3,sy-97],[px,sy-94]],P.mint)}
  health(c,e,px,sy-(big?130:104),big);
  if(windup){pixels(c,'!',px-2,sy-(big?144:117),1,P.coral);box(c,px-1,sy-(big?142:115),2,6,P.amber);box(c,px-1,sy-(big?134:107),2,2,P.amber)}

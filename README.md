@@ -27,7 +27,8 @@ Deploy with GitHub Pages → Deploy from a branch → `main` → `/ (root)`. No 
 ## Architecture
 
 - `engine.js`: seeded deterministic fixed-step simulation, combat, AI, drops and progression
-- `render.js`: original procedural pixel scenery, characters and effects
+- `render.js`: original procedural scenery, character placement and effects
+- `sprites.js`: original 64×64 indexed character frames, cached pixel runs and exact 2× nearest-neighbor rendering. Five unique palettes/silhouettes, six-step walk cycles, windup/strike/recovery, cross/uppercut, kick/flying kick, throw, slam/charge, jump, held, hurt and downed poses. No borrowed sprites or smoothing.
 - `app.js`: DOM overlays, keyboard/touch input, fixed timestep, pause and persistence
 - `audio.js`: original synthesized melody and effects; starts only after user interaction
 - `tests/`: deterministic engine and integration/audio tests

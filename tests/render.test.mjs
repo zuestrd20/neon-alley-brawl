@@ -19,6 +19,7 @@ function canvasRecorder() {
     },
     set(target, key, value) {
       if (typeof value === 'number') assert.ok(Number.isFinite(value), `${String(key)} received ${value}`);
+      if (key === 'fillStyle') calls.push(['fillStyle', value]);
       target[key] = value;
       return true;
     },
@@ -94,6 +95,8 @@ test('reduced motion disables hit flash overlays', () => {
     render(recorder.ctx, g, { reducedMotion });
     return recorder.calls;
   };
-  assert.deepEqual(draw(true, true), draw(false, true));
+  assert.notDeepEqual(draw(true, true), draw(false, true), 'reduced motion retains the readable hurt pose');
+  const white = calls => calls.filter(c => c[0] === 'fillStyle' && c[1] === '#e2f3dd').length;
+  assert.ok(white(draw(true, false)) > white(draw(true, true)), 'only normal motion adds the white hit flash');
   assert.notDeepEqual(draw(true, false), draw(false, false));
 });
